@@ -1,6 +1,6 @@
 local M = {}
 
----@class snacks-call-hierarchy.Config
+---@class snacks-call-hierarchy.Config : snacks.picker.Config
 ---@field max_depth? integer Maximum tree depth (default 20)
 ---@field auto_expand_depth? integer Auto-expand depth on open (default 10)
 
@@ -14,9 +14,21 @@ function M.setup(opts)
 
   local sources = require("snacks.picker.config.sources")
 
+  local max_depth = opts.max_depth or 20
+  local auto_expand_depth = opts.auto_expand_depth or 10
+
+  -- Strip options the user cannot override (locked by internal tree mechanics)
+  local user_opts = vim.tbl_extend("force", opts, {})
+  for _, k in ipairs({ "finder", "format", "tree", "sort", "max_depth", "auto_expand_depth" }) do
+    user_opts[k] = nil
+  end
+
+  -- Plugin defaults (user opts from setup() can override these)
+  local defaults = { preview = "file" }
+
+  -- Internal config that always wins over user opts
   ---@type snacks.picker.Config
-  local base = {
-    preview = "file",
+  local locked = {
     tree = true,
     format = format.call_hierarchy,
     sort = { fields = { "idx" } },
@@ -27,8 +39,8 @@ function M.setup(opts)
       call_hierarchy_outgoing = actions.switch_outgoing,
       call_hierarchy_reroot = actions.reroot,
     },
-    max_depth = opts.max_depth or 20,
-    auto_expand_depth = opts.auto_expand_depth or 10,
+    max_depth = max_depth,
+    auto_expand_depth = auto_expand_depth,
     win = {
       input = {
         keys = {
@@ -48,6 +60,8 @@ function M.setup(opts)
       },
     },
   }
+
+  local base = vim.tbl_deep_extend("force", defaults, user_opts, locked)
 
   sources.call_hierarchy_in = vim.tbl_deep_extend("force", base, {
     finder = finder.incoming,

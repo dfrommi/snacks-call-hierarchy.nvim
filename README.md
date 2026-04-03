@@ -65,7 +65,7 @@ Added by this plugin (work in both the list and the input field's normal mode):
 
 | Key    | Action                              |
 |--------|-------------------------------------|
-| `za`   | Expand/collapse node (no-op on leaf)|
+| `za`   | Expand/collapse node                |
 | `gi`   | Switch to incoming calls            |
 | `go`   | Switch to outgoing calls            |
 | `gr`   | Re-root tree from selected node     |
@@ -77,6 +77,37 @@ Inherited from snacks.nvim defaults (remapping them there will affect this picke
 | `<CR>`   | Jump to location                                       |
 | `<Tab>`  | Toggle selection and move to next item                 |
 | `<C-q>`  | Send selected items to quickfix (all if none selected) |
+
+## Picker options
+
+The picker is powered by [snacks.nvim](https://github.com/folke/snacks.nvim)'s picker. Any option accepted by snacks picker can be passed to `setup()` as a global default, or directly at call-site for one-off overrides.
+
+```lua
+-- Global defaults via setup()
+require("snacks-call-hierarchy").setup({
+  max_depth = 20,
+  layout = "ivy",   -- any snacks picker option
+  preview = false,
+})
+
+-- Per-call overrides (snacks merges these on top of the source config)
+Snacks.picker.call_hierarchy_in({ title = "Who calls this?" })
+Snacks.picker.call_hierarchy_out({ layout = "vertical" })
+```
+
+### Options that cannot be overridden
+
+These are locked by the internal tree mechanics and will be ignored if passed:
+
+| Option | Reason |
+|--------|--------|
+| `finder` | Set automatically based on direction (incoming/outgoing) |
+| `format` | Custom tree renderer required for indent and icons |
+| `tree` | Must be `true` for tree layout |
+| `sort` | Must sort by `idx` to preserve depth-first tree order |
+| `matcher.keep_parents` | Required to keep parent nodes visible when filtering |
+| `matcher.sort_empty` | Required to avoid reordering when the search query is empty |
+| `win.*.keys` for `za` `gi` `go` `gr` | Plugin keybindings; you may still add your own keys |
 
 ## Credits
 
