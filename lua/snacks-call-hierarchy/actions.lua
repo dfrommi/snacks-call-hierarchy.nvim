@@ -31,16 +31,6 @@ function M.toggle(picker, item)
 end
 
 ---@param picker snacks.Picker
-function M.switch_incoming(picker)
-  M._switch_direction(picker, "incoming")
-end
-
----@param picker snacks.Picker
-function M.switch_outgoing(picker)
-  M._switch_direction(picker, "outgoing")
-end
-
----@param picker snacks.Picker
 ---@param lsp_item lsp.CallHierarchyItem
 ---@param direction "incoming"|"outgoing"
 local function replace_state(picker, lsp_item, direction)
@@ -58,10 +48,25 @@ local function replace_state(picker, lsp_item, direction)
   end)
 end
 
---- Re-root the tree from the selected item.
+--- Toggle between incoming and outgoing direction, keeping the current root.
+---@param picker snacks.Picker
+function M.toggle_direction(picker)
+  local state = finder.get_state(picker)
+  if not state then
+    return
+  end
+  local root = state.nodes[state.root_id]
+  if not root then
+    return
+  end
+  local other = state.direction == "incoming" and "outgoing" or "incoming"
+  replace_state(picker, root.lsp_item, other)
+end
+
+--- Re-root at the selected item and show incoming calls.
 ---@param picker snacks.Picker
 ---@param item snacks.picker.Item
-function M.reroot(picker, item)
+function M.reroot_incoming(picker, item)
   if not item then
     return
   end
@@ -73,21 +78,25 @@ function M.reroot(picker, item)
   if not node then
     return
   end
-  replace_state(picker, node.lsp_item, state.direction)
+  replace_state(picker, node.lsp_item, "incoming")
 end
 
+--- Re-root at the selected item and show outgoing calls.
 ---@param picker snacks.Picker
----@param direction "incoming"|"outgoing"
-function M._switch_direction(picker, direction)
+---@param item snacks.picker.Item
+function M.reroot_outgoing(picker, item)
+  if not item then
+    return
+  end
   local state = finder.get_state(picker)
   if not state then
     return
   end
-  local root = state.nodes[state.root_id]
-  if not root then
+  local node = state.nodes[item.node_id]
+  if not node then
     return
   end
-  replace_state(picker, root.lsp_item, direction)
+  replace_state(picker, node.lsp_item, "outgoing")
 end
 
 return M

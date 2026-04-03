@@ -2,7 +2,7 @@
 
 LSP call hierarchy as an expandable tree inside a [snacks.nvim](https://github.com/folke/snacks.nvim) picker.
 
-Navigate incoming and outgoing call trees, expand nodes on demand, and switch direction — all inside the familiar snacks picker UI.
+Browse incoming and outgoing call trees, expand nodes on demand, re-root from any entry, and stay inside the usual snacks picker workflow.
 
 ## Requirements
 
@@ -38,10 +38,12 @@ require("snacks-call-hierarchy").setup()
 
 ```lua
 require("snacks-call-hierarchy").setup({
-  max_depth        = 20,  -- maximum depth fetched from LSP
+  max_depth = 20,         -- maximum depth fetched from LSP
   auto_expand_depth = 10, -- depth expanded automatically on open
 })
 ```
+
+`setup()` also accepts regular snacks picker options such as `layout`, `preview`, or window settings. This plugin applies them as defaults for both call hierarchy sources.
 
 ## Usage
 
@@ -59,28 +61,25 @@ vim.keymap.set("n", "<leader>ci", function() Snacks.picker.call_hierarchy_in() e
 vim.keymap.set("n", "<leader>co", function() Snacks.picker.call_hierarchy_out() end, { desc = "Outgoing call hierarchy" })
 ```
 
+The root entry is annotated with `[Incoming]` or `[Outgoing]` so the current direction stays visible after re-rooting.
+
 ### Picker keybindings
 
-Added by this plugin (work in both the list and the input field's normal mode):
+Added by this plugin for both the picker list and the input window:
 
-| Key    | Action                              |
-|--------|-------------------------------------|
-| `za`   | Expand/collapse node                |
-| `gi`   | Switch to incoming calls            |
-| `go`   | Switch to outgoing calls            |
-| `gr`   | Re-root tree from selected node     |
+| Key | Action |
+|---|---|
+| `<CR>` | Open the selected location |
+| `<leader><space>` | Toggle incoming/outgoing direction for the current root |
+| `za` | Expand or collapse the selected node |
+| `gi` | Re-root at the selected item and show incoming calls |
+| `go` | Re-root at the selected item and show outgoing calls |
 
-Inherited from snacks.nvim defaults (remapping them there will affect this picker too):
-
-| Key      | Default action                                         |
-|----------|--------------------------------------------------------|
-| `<CR>`   | Jump to location                                       |
-| `<Tab>`  | Toggle selection and move to next item                 |
-| `<C-q>`  | Send selected items to quickfix (all if none selected) |
+Other default snacks picker mappings still apply unless you change them in snacks itself.
 
 ## Picker options
 
-The picker is powered by [snacks.nvim](https://github.com/folke/snacks.nvim)'s picker. Any option accepted by snacks picker can be passed to `setup()` as a global default, or directly at call-site for one-off overrides.
+The picker is built on [snacks.nvim](https://github.com/folke/snacks.nvim)'s picker. You can pass snacks picker options through `setup()` as global defaults, or at call-site for one-off overrides.
 
 ```lua
 -- Global defaults via setup()
@@ -97,17 +96,20 @@ Snacks.picker.call_hierarchy_out({ layout = "vertical" })
 
 ### Options that cannot be overridden
 
-These are locked by the internal tree mechanics and will be ignored if passed:
+These are controlled by the plugin and should be treated as internal:
 
-| Option | Reason |
-|--------|--------|
-| `finder` | Set automatically based on direction (incoming/outgoing) |
-| `format` | Custom tree renderer required for indent and icons |
-| `tree` | Must be `true` for tree layout |
-| `sort` | Must sort by `idx` to preserve depth-first tree order |
-| `matcher.keep_parents` | Required to keep parent nodes visible when filtering |
-| `matcher.sort_empty` | Required to avoid reordering when the search query is empty |
-| `win.*.keys` for `za` `gi` `go` `gr` | Plugin keybindings; you may still add your own keys |
+| Option | Why |
+|---|---|
+| `finder` | Chosen automatically from the requested direction |
+| `format` | Uses a custom formatter for tree structure and labels |
+| `tree` | Required for tree rendering |
+| `sort` | Fixed to `idx` to preserve depth-first tree order |
+| `max_depth` | Consumed by the plugin before the picker config is built |
+| `auto_expand_depth` | Consumed by the plugin before the picker config is built |
+| `matcher.keep_parents` | Keeps parent nodes visible while filtering |
+| `matcher.sort_empty` | Prevents reordering when the query is empty |
+
+The plugin also installs its own keymaps into `win.input.keys` and `win.list.keys` for `<CR>`, `<leader><space>`, `za`, `gi`, and `go`. You can still add other keys alongside them.
 
 ## Credits
 

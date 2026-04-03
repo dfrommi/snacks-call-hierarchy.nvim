@@ -23,6 +23,14 @@ function M.setup(opts)
     user_opts[k] = nil
   end
 
+  local keys = {
+    ["<CR>"] = { "confirm", desc = "Open file" },
+    ["<leader><space>"] = { "call_hierarchy_toggle_direction", desc = "Toggle incoming/outgoing direction" },
+    ["za"] = { "call_hierarchy_toggle_expanded", desc = "Toggle expand/collapse" },
+    ["gi"] = { "call_hierarchy_incoming", desc = "Re-root at selection, show incoming calls" },
+    ["go"] = { "call_hierarchy_outgoing", desc = "Re-root at selection, show outgoing calls" },
+  }
+
   -- Plugin defaults (user opts from setup() can override these)
   local defaults = { preview = "file" }
 
@@ -34,29 +42,19 @@ function M.setup(opts)
     sort = { fields = { "idx" } },
     matcher = { sort_empty = false, keep_parents = true },
     actions = {
-      call_hierarchy_toggle = actions.toggle,
-      call_hierarchy_incoming = actions.switch_incoming,
-      call_hierarchy_outgoing = actions.switch_outgoing,
-      call_hierarchy_reroot = actions.reroot,
+      call_hierarchy_toggle_expanded = actions.toggle,
+      call_hierarchy_incoming = actions.reroot_incoming,
+      call_hierarchy_outgoing = actions.reroot_outgoing,
+      call_hierarchy_toggle_direction = actions.toggle_direction,
     },
     max_depth = max_depth,
     auto_expand_depth = auto_expand_depth,
     win = {
       input = {
-        keys = {
-          ["za"] = { "call_hierarchy_toggle", mode = { "n" }, desc = "Toggle expand/collapse" },
-          ["gi"] = { "call_hierarchy_incoming", mode = { "n" }, desc = "Switch to incoming calls" },
-          ["go"] = { "call_hierarchy_outgoing", mode = { "n" }, desc = "Switch to outgoing calls" },
-          ["gr"] = { "call_hierarchy_reroot", mode = { "n" }, desc = "Re-root from selection" },
-        },
+        keys = keys,
       },
       list = {
-        keys = {
-          ["za"] = { "call_hierarchy_toggle", desc = "Toggle expand/collapse" },
-          ["gi"] = { "call_hierarchy_incoming", desc = "Switch to incoming calls" },
-          ["go"] = { "call_hierarchy_outgoing", desc = "Switch to outgoing calls" },
-          ["gr"] = { "call_hierarchy_reroot", desc = "Re-root from selection" },
-        },
+        keys = keys,
       },
     },
   }
