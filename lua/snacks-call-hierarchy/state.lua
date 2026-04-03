@@ -1,0 +1,203 @@
+---@class snacks-call-hierarchy.Node
+---@field id integer
+---@field lsp_item lsp.CallHierarchyItem
+---@field parent_id integer?
+---@field children_ids integer[]? nil = not fetched, {} = leaf
+---@field expanded boolean
+---@field depth integer
+
+---@class snacks-call-hierarchy.State
+---@field client vim.lsp.Client
+---@field direction "incoming"|"outgoing"
+---@field nodes table<integer, snacks-call-hierarchy.Node>
+---@field root_id integer
+---@field _next_id integer
+---@field max_depth integer
+local State = {}
+State.__index = State
+
+---@param client vim.lsp.Client
+---@param root_item lsp.CallHierarchyItem
+---@param direction "incoming"|"outgoing"
+---@param max_depth? integer
+---@return snacks-call-hierarchy.State
+function State.new(client, root_item, direction, max_depth)
+  local self = setmetatable({}, State)
+  self.client = client
+  self.direction = direction
+  self.nodes = {}
+  self._next_id = 0
+  self.max_depth = max_depth or 20
+
+  local root = self:_create_node(root_item, nil, 0)
+  root.expanded = true
+  self.root_id = root.id
+  return self
+end
+
+---@param lsp_item lsp.CallHierarchyItem
+---@param parent_id integer?
+---@param depth integer
+---@return snacks-call-hierarchy.Node
+function State:_create_node(lsp_item, parent_id, depth)
+  self._next_id = self._next_id + 1
+  local node = {
+    id = self._next_id,
+    lsp_item = lsp_item,
+    parent_id = parent_id,
+    children_ids = nil,
+    expanded = false,
+    depth = depth,
+  }
+  self.nodes[node.id] = node
+  return node
+end
+
+---@param node_id integer
+---@param callback fun()
+function State:fetch_children(node_id, callback)
+  local node = self.nodes[node_id]
+  if not node or node.children_ids then
+    callback()
+    return
+  end
+
+  local method = self.direction == "incoming"
+      and "callHierarchy/incomingCalls"
+    or "callHierarchy/outgoingCalls"
+
+  self.client:request(method, { item = node.lsp_item }, function(err, result)
+    if err or not result then
+      node.children_ids = {}
+      vim.schedule(callback)
+      return
+    end
+
+    node.children_ids = {}
+    ---@param call lsp.CallHierarchyIncomingCall|lsp.CallHierarchyOutgoingCall
+    for _, call in ipairs(result) do
+      local child_item = self.direction == "incoming" and call.from or call.to
+      if child_item then
+        local child = self:_create_node(child_item, node_id, node.depth + 1)
+        node.children_ids[#node.children_ids + 1] = child.id
+      end
+    end
+
+    vim.schedule(callback)
+  end)
+end
+
+--- Calls callback once all recursive fetches are complete.
+---@param node_id integer
+---@param remaining_depth integer
+---@param callback fun()
+function State:expand_recursive(node_id, remaining_depth, callback)
+  local node = self.nodes[node_id]
+  if not node or remaining_depth <= 0 then
+    callback()
+    return
+  end
+
+  if node.children_ids then
+    if #node.children_ids > 0 then
+      node.expanded = true
+      self:_expand_children(node, remaining_depth - 1, callback)
+    else
+      callback()
+    end
+    return
+  end
+
+  if node.depth >= self.max_depth then
+    node.children_ids = {}
+    callback()
+    return
+  end
+
+  self:fetch_children(node_id, function()
+    if node.children_ids and #node.children_ids > 0 then
+      node.expanded = true
+      self:_expand_children(node, remaining_depth - 1, callback)
+    else
+      callback()
+    end
+  end)
+end
+
+---@param node snacks-call-hierarchy.Node
+---@param remaining_depth integer
+---@param callback fun()
+function State:_expand_children(node, remaining_depth, callback)
+  if remaining_depth <= 0 or not node.children_ids or #node.children_ids == 0 then
+    callback()
+    return
+  end
+
+  local pending = #node.children_ids
+  for _, child_id in ipairs(node.children_ids) do
+    self:expand_recursive(child_id, remaining_depth, function()
+      pending = pending - 1
+      if pending == 0 then
+        callback()
+      end
+    end)
+  end
+end
+
+--- Toggle expand/collapse for a node.
+--- If children haven't been fetched yet, fetches them first.
+---@param node_id integer
+---@param callback fun()
+function State:toggle(node_id, callback)
+  local node = self.nodes[node_id]
+  if not node then
+    callback()
+    return
+  end
+
+  -- Not yet fetched: fetch then expand
+  if node.children_ids == nil then
+    if node.depth >= self.max_depth then
+      node.children_ids = {}
+      callback()
+      return
+    end
+    self:fetch_children(node_id, function()
+      if #node.children_ids > 0 then
+        node.expanded = true
+      end
+      callback()
+    end)
+    return
+  end
+
+  -- Has children: toggle
+  if #node.children_ids > 0 then
+    node.expanded = not node.expanded
+  end
+  callback()
+end
+
+--- Depth-first walk over expanded nodes, yielding nodes in display order.
+---@return snacks-call-hierarchy.Node[]
+function State:walk()
+  local result = {}
+
+  local function visit(node_id)
+    local node = self.nodes[node_id]
+    if not node then
+      return
+    end
+    result[#result + 1] = node
+    if node.expanded and node.children_ids then
+      for _, child_id in ipairs(node.children_ids) do
+        visit(child_id)
+      end
+    end
+  end
+
+  visit(self.root_id)
+  return result
+end
+
+return State
