@@ -2,26 +2,17 @@ local finder = require("snacks-call-hierarchy.finder")
 
 local M = {}
 
+--- Toggle expand/collapse. Does nothing on leaf nodes.
 ---@param picker snacks.Picker
 ---@param item snacks.picker.Item
-function M.confirm(picker, item, action)
-  if not item then
-    return
-  end
-
+function M.toggle(picker, item)
+  if not item then return end
   local state = finder.get_state(picker)
-  if not state then
-    return
-  end
-
+  if not state then return end
   local node = state.nodes[item.node_id]
-  if not node then
-    return
-  end
+  if not node then return end
 
-  -- Leaf node (already fetched, no children): jump directly
   if node.children_ids and #node.children_ids == 0 then
-    Snacks.picker.actions.jump(picker, item, action)
     return
   end
 
@@ -31,14 +22,6 @@ function M.confirm(picker, item, action)
       picker:find()
     end)
   end)
-end
-
----@param picker snacks.Picker
----@param item snacks.picker.Item
-function M.jump(picker, item, action)
-  if item then
-    Snacks.picker.actions.jump(picker, item, action)
-  end
 end
 
 ---@param picker snacks.Picker

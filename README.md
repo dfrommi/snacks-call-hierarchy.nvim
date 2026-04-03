@@ -61,19 +61,20 @@ vim.keymap.set("n", "<leader>co", function() Snacks.picker.call_hierarchy_out() 
 
 ### Picker keybindings
 
-Added by this plugin:
+Added by this plugin (work in both the list and the input field's normal mode):
 
-| Key    | Action                                |
-|--------|---------------------------------------|
-| `<CR>` | Expand/collapse node, or jump if leaf |
-| `gi`   | Switch to incoming calls              |
-| `go`   | Switch to outgoing calls              |
+| Key    | Action                              |
+|--------|-------------------------------------|
+| `za`   | Expand/collapse node (no-op on leaf)|
+| `gi`   | Switch to incoming calls            |
+| `go`   | Switch to outgoing calls            |
+| `gr`   | Re-root tree from selected node     |
 
 Inherited from snacks.nvim defaults (remapping them there will affect this picker too):
 
 | Key      | Default action                                         |
 |----------|--------------------------------------------------------|
-| `<S-CR>` | Jump to location                                       |
+| `<CR>`   | Jump to location                                       |
 | `<Tab>`  | Toggle selection and move to next item                 |
 | `<C-q>`  | Send selected items to quickfix (all if none selected) |
 

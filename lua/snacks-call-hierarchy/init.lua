@@ -22,8 +22,7 @@ function M.setup(opts)
     sort = { fields = { "idx" } },
     matcher = { sort_empty = false, keep_parents = true },
     actions = {
-      confirm = actions.confirm,
-      call_hierarchy_jump = actions.jump,
+      call_hierarchy_toggle = actions.toggle,
       call_hierarchy_incoming = actions.switch_incoming,
       call_hierarchy_outgoing = actions.switch_outgoing,
       call_hierarchy_reroot = actions.reroot,
@@ -33,17 +32,18 @@ function M.setup(opts)
     win = {
       input = {
         keys = {
-          ["gi"] = { "call_hierarchy_incoming", mode = { "n", "i" }, desc = "Switch to incoming calls" },
-          ["go"] = { "call_hierarchy_outgoing", mode = { "n", "i" }, desc = "Switch to outgoing calls" },
+          ["za"] = { "call_hierarchy_toggle", mode = { "n" }, desc = "Toggle expand/collapse" },
+          ["gi"] = { "call_hierarchy_incoming", mode = { "n" }, desc = "Switch to incoming calls" },
+          ["go"] = { "call_hierarchy_outgoing", mode = { "n" }, desc = "Switch to outgoing calls" },
+          ["gr"] = { "call_hierarchy_reroot", mode = { "n" }, desc = "Re-root from selection" },
         },
       },
       list = {
         keys = {
-          ["o"] = { "call_hierarchy_jump", desc = "Jump to location" },
-          ["<CR>"] = { "confirm", desc = "Toggle / Jump" },
-          ["r"] = { "call_hierarchy_reroot", desc = "Re-root from selection" },
+          ["za"] = { "call_hierarchy_toggle", desc = "Toggle expand/collapse" },
           ["gi"] = { "call_hierarchy_incoming", desc = "Switch to incoming calls" },
           ["go"] = { "call_hierarchy_outgoing", desc = "Switch to outgoing calls" },
+          ["gr"] = { "call_hierarchy_reroot", desc = "Re-root from selection" },
         },
       },
     },
