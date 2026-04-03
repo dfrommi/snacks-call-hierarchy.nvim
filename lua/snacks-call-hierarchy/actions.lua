@@ -6,11 +6,17 @@ local M = {}
 ---@param picker snacks.Picker
 ---@param item snacks.picker.Item
 function M.toggle(picker, item)
-  if not item then return end
+  if not item then
+    return
+  end
   local state = finder.get_state(picker)
-  if not state then return end
+  if not state then
+    return
+  end
   local node = state.nodes[item.node_id]
-  if not node then return end
+  if not node then
+    return
+  end
 
   if node.children_ids and #node.children_ids == 0 then
     return
@@ -56,11 +62,17 @@ end
 ---@param picker snacks.Picker
 ---@param item snacks.picker.Item
 function M.reroot(picker, item)
-  if not item then return end
+  if not item then
+    return
+  end
   local state = finder.get_state(picker)
-  if not state then return end
+  if not state then
+    return
+  end
   local node = state.nodes[item.node_id]
-  if not node then return end
+  if not node then
+    return
+  end
   replace_state(picker, node.lsp_item, state.direction)
 end
 
@@ -68,9 +80,13 @@ end
 ---@param direction "incoming"|"outgoing"
 function M._switch_direction(picker, direction)
   local state = finder.get_state(picker)
-  if not state then return end
+  if not state then
+    return
+  end
   local root = state.nodes[state.root_id]
-  if not root then return end
+  if not root then
+    return
+  end
   replace_state(picker, root.lsp_item, direction)
 end
 

@@ -62,9 +62,7 @@ function State:fetch_children(node_id, callback)
     return
   end
 
-  local method = self.direction == "incoming"
-      and "callHierarchy/incomingCalls"
-    or "callHierarchy/outgoingCalls"
+  local method = self.direction == "incoming" and "callHierarchy/incomingCalls" or "callHierarchy/outgoingCalls"
 
   self.client:request(method, { item = node.lsp_item }, function(err, result)
     if err or not result then
