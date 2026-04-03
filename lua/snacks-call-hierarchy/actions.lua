@@ -22,10 +22,26 @@ function M.toggle(picker, item)
     return
   end
 
+  local target_node_id = item.node_id
+  local target_top = picker.list.top
+
   state:toggle(item.node_id, function()
     vim.schedule(function()
-      picker.list:set_target()
-      picker:find()
+      picker:find({
+        refresh = true,
+        on_done = function()
+          local target_cursor
+          for idx, refreshed in ipairs(picker:items()) do
+            if refreshed.node_id == target_node_id then
+              target_cursor = idx
+              break
+            end
+          end
+          if target_cursor then
+            picker.list:view(target_cursor, target_top)
+          end
+        end,
+      })
     end)
   end)
 end
