@@ -10,6 +10,14 @@
 ---@class snacks-call-hierarchy.StateConfig
 ---@field max_depth? integer
 ---@field max_open_requests? integer
+---@field lsp_filter? fun(item: snacks-call-hierarchy.FilterItem, ctx: snacks-call-hierarchy.FilterContext): boolean
+
+---@class snacks-call-hierarchy.FilterItem : lsp.CallHierarchyItem
+---@field path? string Absolute file path for `file://` URIs
+
+---@class snacks-call-hierarchy.FilterContext
+---@field client vim.lsp.Client
+---@field direction "incoming"|"outgoing"
 
 ---@class snacks-call-hierarchy.State
 ---@field client vim.lsp.Client
@@ -22,6 +30,7 @@
 ---@field open_request_count integer
 ---@field open_capped boolean
 ---@field _warned_open_cap boolean
+---@field lsp_filter? fun(item: snacks-call-hierarchy.FilterItem, ctx: snacks-call-hierarchy.FilterContext): boolean
 local State = {}
 State.__index = State
 
@@ -43,11 +52,38 @@ function State.new(client, root_item, direction, opts)
   self.open_request_count = 0
   self.open_capped = false
   self._warned_open_cap = false
+  self.lsp_filter = opts.lsp_filter
 
   local root = self:_create_node(root_item, nil, 0)
   root.expanded = true
   self.root_id = root.id
   return self
+end
+
+---@param lsp_item lsp.CallHierarchyItem
+---@return snacks-call-hierarchy.FilterItem
+function State:_filter_item(lsp_item)
+  ---@cast lsp_item snacks-call-hierarchy.FilterItem
+  if lsp_item.uri and vim.startswith(lsp_item.uri, "file://") then
+    lsp_item.path = vim.uri_to_fname(lsp_item.uri)
+  else
+    lsp_item.path = nil
+  end
+  return lsp_item
+end
+
+---@param lsp_item lsp.CallHierarchyItem
+---@param is_root boolean
+---@return boolean
+function State:_matches_filter(lsp_item, is_root)
+  if is_root or not self.lsp_filter then
+    return true
+  end
+
+  return self.lsp_filter(self:_filter_item(lsp_item), {
+    client = self.client,
+    direction = self.direction,
+  }) ~= false
 end
 
 ---@param lsp_item lsp.CallHierarchyItem
@@ -145,7 +181,7 @@ function State:fetch_children(node_id, callback, count_for_open_cap)
     ---@param call lsp.CallHierarchyIncomingCall|lsp.CallHierarchyOutgoingCall
     for _, call in ipairs(result) do
       local child_item = self.direction == "incoming" and call.from or call.to
-      if child_item then
+      if child_item and self:_matches_filter(child_item, false) then
         local child = self:_create_node(child_item, node_id, node.depth + 1)
         node.children_ids[#node.children_ids + 1] = child.id
       end

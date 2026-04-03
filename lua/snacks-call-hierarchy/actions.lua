@@ -55,6 +55,7 @@ local function replace_state(picker, lsp_item, direction)
   local new_state = State.new(old.client, lsp_item, direction, {
     max_depth = old.max_depth,
     max_open_requests = old.max_open_requests,
+    lsp_filter = old.lsp_filter,
   })
   finder.set_state(picker, new_state)
 

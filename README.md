@@ -36,6 +36,8 @@ require("snacks-call-hierarchy").setup()
 
 ## Configuration
 
+Default configuration:
+
 ```lua
 require("snacks-call-hierarchy").setup({
   max_depth = 20,         -- maximum depth fetched from LSP
@@ -44,9 +46,26 @@ require("snacks-call-hierarchy").setup({
 })
 ```
 
+This is the default config used when you call `setup()` without overrides.
+
 `setup()` also accepts regular snacks picker options such as `layout`, `preview`, or window settings. This plugin applies them as defaults for both call hierarchy sources.
 
 If initial expansion trips the request cap, the picker keeps the partial tree that has already loaded, shows a warning, and stops further fetching for that picker state.
+
+Example with `lsp_filter`:
+
+```lua
+require("snacks-call-hierarchy").setup({
+  max_depth = 20,
+  auto_expand_depth = 10,
+  max_open_requests = 100,
+  lsp_filter = function(item)
+    return item.path and item.path:find("/src/main/", 1, true) ~= nil
+  end,
+})
+```
+
+`lsp_filter` is applied while expanding the call hierarchy. Returning `false` prunes that branch entirely, so excluded nodes are neither shown nor traversed further. For `file://` URIs, the item passed to the filter also includes `item.path`. The initial root item is always included automatically.
 
 ## Usage
 

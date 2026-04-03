@@ -125,6 +125,7 @@ function M.finder(direction)
           local new_state = State.new(client, root_item, direction, {
             max_depth = max_depth,
             max_open_requests = max_open_requests,
+            lsp_filter = opts.lsp_filter,
           })
           M.set_state(ctx.picker, new_state)
 
