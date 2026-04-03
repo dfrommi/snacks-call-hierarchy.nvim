@@ -52,7 +52,10 @@ end
 local function replace_state(picker, lsp_item, direction)
   local old = finder.get_state(picker)
   local State = require("snacks-call-hierarchy.state")
-  local new_state = State.new(old.client, lsp_item, direction, old.max_depth)
+  local new_state = State.new(old.client, lsp_item, direction, {
+    max_depth = old.max_depth,
+    max_open_requests = old.max_open_requests,
+  })
   finder.set_state(picker, new_state)
 
   local auto_expand_depth = picker.opts.auto_expand_depth or 10

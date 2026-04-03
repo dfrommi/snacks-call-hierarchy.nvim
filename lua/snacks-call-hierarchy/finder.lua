@@ -94,6 +94,7 @@ function M.finder(direction)
     local win = ctx.filter.current_win
     local max_depth = opts.max_depth or 20
     local auto_expand_depth = opts.auto_expand_depth or 10
+    local max_open_requests = opts.max_open_requests or 100
 
     -- Capture client and params in the main loop (before entering async context)
     local clients = lsp_source.get_clients(buf, "textDocument/prepareCallHierarchy")
@@ -121,7 +122,10 @@ function M.finder(direction)
           end
 
           local root_item = result[1]
-          local new_state = State.new(client, root_item, direction, max_depth)
+          local new_state = State.new(client, root_item, direction, {
+            max_depth = max_depth,
+            max_open_requests = max_open_requests,
+          })
           M.set_state(ctx.picker, new_state)
 
           -- Recursively fetch and expand up to auto_expand_depth

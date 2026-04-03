@@ -3,6 +3,7 @@ local M = {}
 ---@class snacks-call-hierarchy.Config : snacks.picker.Config
 ---@field max_depth? integer Maximum tree depth (default 20)
 ---@field auto_expand_depth? integer Auto-expand depth on open (default 10)
+---@field max_open_requests? integer Maximum child LSP requests during initial expansion (default 100)
 
 ---@param opts? snacks-call-hierarchy.Config
 function M.setup(opts)
@@ -16,10 +17,11 @@ function M.setup(opts)
 
   local max_depth = opts.max_depth or 20
   local auto_expand_depth = opts.auto_expand_depth or 10
+  local max_open_requests = opts.max_open_requests or 100
 
   -- Strip options the user cannot override (locked by internal tree mechanics)
   local user_opts = vim.tbl_extend("force", opts, {})
-  for _, k in ipairs({ "finder", "format", "tree", "sort", "max_depth", "auto_expand_depth" }) do
+  for _, k in ipairs({ "finder", "format", "tree", "sort", "max_depth", "auto_expand_depth", "max_open_requests" }) do
     user_opts[k] = nil
   end
 
@@ -49,6 +51,7 @@ function M.setup(opts)
     },
     max_depth = max_depth,
     auto_expand_depth = auto_expand_depth,
+    max_open_requests = max_open_requests,
     win = {
       input = {
         keys = keys,

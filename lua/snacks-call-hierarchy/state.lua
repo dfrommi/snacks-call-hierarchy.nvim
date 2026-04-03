@@ -2,9 +2,14 @@
 ---@field id integer
 ---@field lsp_item lsp.CallHierarchyItem
 ---@field parent_id integer?
----@field children_ids integer[]? nil = not fetched, {} = leaf
+---@field children_ids integer[]? nil = not fetched, {} = leaf or capped
 ---@field expanded boolean
 ---@field depth integer
+---@field pending_fetch boolean?
+
+---@class snacks-call-hierarchy.StateConfig
+---@field max_depth? integer
+---@field max_open_requests? integer
 
 ---@class snacks-call-hierarchy.State
 ---@field client vim.lsp.Client
@@ -13,21 +18,31 @@
 ---@field root_id integer
 ---@field _next_id integer
 ---@field max_depth integer
+---@field max_open_requests integer
+---@field open_request_count integer
+---@field open_capped boolean
+---@field _warned_open_cap boolean
 local State = {}
 State.__index = State
 
 ---@param client vim.lsp.Client
 ---@param root_item lsp.CallHierarchyItem
 ---@param direction "incoming"|"outgoing"
----@param max_depth? integer
+---@param opts? snacks-call-hierarchy.StateConfig
 ---@return snacks-call-hierarchy.State
-function State.new(client, root_item, direction, max_depth)
+function State.new(client, root_item, direction, opts)
+  opts = opts or {}
+
   local self = setmetatable({}, State)
   self.client = client
   self.direction = direction
   self.nodes = {}
   self._next_id = 0
-  self.max_depth = max_depth or 20
+  self.max_depth = opts.max_depth or 20
+  self.max_open_requests = opts.max_open_requests or 100
+  self.open_request_count = 0
+  self.open_capped = false
+  self._warned_open_cap = false
 
   local root = self:_create_node(root_item, nil, 0)
   root.expanded = true
@@ -48,23 +63,78 @@ function State:_create_node(lsp_item, parent_id, depth)
     children_ids = nil,
     expanded = false,
     depth = depth,
+    pending_fetch = false,
   }
   self.nodes[node.id] = node
   return node
 end
 
+function State:_notify_open_cap()
+  if self._warned_open_cap then
+    return
+  end
+  self._warned_open_cap = true
+
+  local message = ("Stopped expanding call hierarchy after %d LSP requests."):format(self.max_open_requests)
+  vim.schedule(function()
+    if Snacks and Snacks.notify and Snacks.notify.warn then
+      Snacks.notify.warn(message, { title = "Call Hierarchy" })
+    else
+      vim.notify(message, vim.log.levels.WARN, { title = "Call Hierarchy" })
+    end
+  end)
+end
+
+function State:_cap_open_frontier()
+  self.open_capped = true
+
+  for _, node in pairs(self.nodes) do
+    if node.children_ids == nil and not node.pending_fetch then
+      node.children_ids = {}
+    end
+  end
+
+  self:_notify_open_cap()
+end
+
 ---@param node_id integer
 ---@param callback fun()
-function State:fetch_children(node_id, callback)
+---@param count_for_open_cap? boolean
+function State:fetch_children(node_id, callback, count_for_open_cap)
   local node = self.nodes[node_id]
   if not node or node.children_ids then
     callback()
     return
   end
 
+  if node.depth >= self.max_depth then
+    node.children_ids = {}
+    callback()
+    return
+  end
+
+  if self.open_capped then
+    node.children_ids = {}
+    callback()
+    return
+  end
+
+  if count_for_open_cap then
+    if self.open_request_count >= self.max_open_requests then
+      self:_cap_open_frontier()
+      node.children_ids = {}
+      callback()
+      return
+    end
+    self.open_request_count = self.open_request_count + 1
+  end
+
   local method = self.direction == "incoming" and "callHierarchy/incomingCalls" or "callHierarchy/outgoingCalls"
+  node.pending_fetch = true
 
   self.client:request(method, { item = node.lsp_item }, function(err, result)
+    node.pending_fetch = false
+
     if err or not result then
       node.children_ids = {}
       vim.schedule(callback)
@@ -81,7 +151,12 @@ function State:fetch_children(node_id, callback)
       end
     end
 
-    vim.schedule(callback)
+    vim.schedule(function()
+      if self.open_capped then
+        self:_cap_open_frontier()
+      end
+      callback()
+    end)
   end)
 end
 
@@ -119,7 +194,7 @@ function State:expand_recursive(node_id, remaining_depth, callback)
     else
       callback()
     end
-  end)
+  end, true)
 end
 
 ---@param node snacks-call-hierarchy.Node
@@ -153,13 +228,13 @@ function State:toggle(node_id, callback)
     return
   end
 
-  -- Not yet fetched: fetch then expand
   if node.children_ids == nil then
-    if node.depth >= self.max_depth then
+    if node.depth >= self.max_depth or self.open_capped then
       node.children_ids = {}
       callback()
       return
     end
+
     self:fetch_children(node_id, function()
       if #node.children_ids > 0 then
         node.expanded = true
@@ -169,7 +244,6 @@ function State:toggle(node_id, callback)
     return
   end
 
-  -- Has children: toggle
   if #node.children_ids > 0 then
     node.expanded = not node.expanded
   end

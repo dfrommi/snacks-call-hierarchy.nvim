@@ -40,10 +40,13 @@ require("snacks-call-hierarchy").setup()
 require("snacks-call-hierarchy").setup({
   max_depth = 20,         -- maximum depth fetched from LSP
   auto_expand_depth = 10, -- depth expanded automatically on open
+  max_open_requests = 100, -- maximum child LSP requests during initial expansion
 })
 ```
 
 `setup()` also accepts regular snacks picker options such as `layout`, `preview`, or window settings. This plugin applies them as defaults for both call hierarchy sources.
+
+If initial expansion trips the request cap, the picker keeps the partial tree that has already loaded, shows a warning, and stops further fetching for that picker state.
 
 ## Usage
 
@@ -85,6 +88,7 @@ The picker is built on [snacks.nvim](https://github.com/folke/snacks.nvim)'s pic
 -- Global defaults via setup()
 require("snacks-call-hierarchy").setup({
   max_depth = 20,
+  max_open_requests = 100,
   layout = "ivy",   -- any snacks picker option
   preview = false,
 })
@@ -106,6 +110,7 @@ These are controlled by the plugin and should be treated as internal:
 | `sort` | Fixed to `idx` to preserve depth-first tree order |
 | `max_depth` | Consumed by the plugin before the picker config is built |
 | `auto_expand_depth` | Consumed by the plugin before the picker config is built |
+| `max_open_requests` | Consumed by the plugin before the picker config is built |
 | `matcher.keep_parents` | Keeps parent nodes visible while filtering |
 | `matcher.sort_empty` | Prevents reordering when the query is empty |
 
