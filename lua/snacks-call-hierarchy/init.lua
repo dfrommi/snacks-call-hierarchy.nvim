@@ -21,7 +21,7 @@ function M.setup(opts)
   local max_open_requests = opts.max_open_requests or 100
 
   -- Strip options the user cannot override (locked by internal tree mechanics)
-  local user_opts = vim.tbl_extend("force", opts, {})
+  local user_opts = vim.tbl_extend("force", {}, opts)
   for _, k in ipairs({
     "finder",
     "format",

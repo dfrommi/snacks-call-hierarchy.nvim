@@ -114,10 +114,8 @@ function M.finder(direction)
       vim.schedule(function()
         client:request("textDocument/prepareCallHierarchy", params, function(err, result)
           if err or not result or #result == 0 then
-            vim.schedule(function()
-              Snacks.notify.warn("No call hierarchy item at cursor", { title = "Call Hierarchy" })
-              running:resume()
-            end)
+            Snacks.notify.warn("No call hierarchy item at cursor", { title = "Call Hierarchy" })
+            running:resume()
             return
           end
 

@@ -83,10 +83,10 @@ function M.toggle_direction(picker)
   replace_state(picker, root.lsp_item, other)
 end
 
---- Re-root at the selected item and show incoming calls.
 ---@param picker snacks.Picker
 ---@param item snacks.picker.Item
-function M.reroot_incoming(picker, item)
+---@param direction "incoming"|"outgoing"
+local function reroot(picker, item, direction)
   if not item then
     return
   end
@@ -98,25 +98,21 @@ function M.reroot_incoming(picker, item)
   if not node then
     return
   end
-  replace_state(picker, node.lsp_item, "incoming")
+  replace_state(picker, node.lsp_item, direction)
+end
+
+--- Re-root at the selected item and show incoming calls.
+---@param picker snacks.Picker
+---@param item snacks.picker.Item
+function M.reroot_incoming(picker, item)
+  reroot(picker, item, "incoming")
 end
 
 --- Re-root at the selected item and show outgoing calls.
 ---@param picker snacks.Picker
 ---@param item snacks.picker.Item
 function M.reroot_outgoing(picker, item)
-  if not item then
-    return
-  end
-  local state = finder.get_state(picker)
-  if not state then
-    return
-  end
-  local node = state.nodes[item.node_id]
-  if not node then
-    return
-  end
-  replace_state(picker, node.lsp_item, "outgoing")
+  reroot(picker, item, "outgoing")
 end
 
 return M

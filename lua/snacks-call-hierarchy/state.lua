@@ -60,16 +60,10 @@ function State.new(client, root_item, direction, opts)
   return self
 end
 
----@param lsp_item lsp.CallHierarchyItem
----@return snacks-call-hierarchy.FilterItem
-function State:_filter_item(lsp_item)
-  ---@cast lsp_item snacks-call-hierarchy.FilterItem
-  if lsp_item.uri and vim.startswith(lsp_item.uri, "file://") then
-    lsp_item.path = vim.uri_to_fname(lsp_item.uri)
-  else
-    lsp_item.path = nil
-  end
-  return lsp_item
+---@param node snacks-call-hierarchy.Node
+---@return boolean
+function State:_is_fetch_blocked(node)
+  return node.depth >= self.max_depth or self.open_capped
 end
 
 ---@param lsp_item lsp.CallHierarchyItem
@@ -80,7 +74,14 @@ function State:_matches_filter(lsp_item, is_root)
     return true
   end
 
-  return self.lsp_filter(self:_filter_item(lsp_item), {
+  ---@cast lsp_item snacks-call-hierarchy.FilterItem
+  if lsp_item.uri and vim.startswith(lsp_item.uri, "file://") then
+    lsp_item.path = vim.uri_to_fname(lsp_item.uri)
+  else
+    lsp_item.path = nil
+  end
+
+  return self.lsp_filter(lsp_item, {
     client = self.client,
     direction = self.direction,
   }) ~= false
@@ -143,13 +144,7 @@ function State:fetch_children(node_id, callback, count_for_open_cap)
     return
   end
 
-  if node.depth >= self.max_depth then
-    node.children_ids = {}
-    callback()
-    return
-  end
-
-  if self.open_capped then
+  if self:_is_fetch_blocked(node) then
     node.children_ids = {}
     callback()
     return
@@ -217,12 +212,6 @@ function State:expand_recursive(node_id, remaining_depth, callback)
     return
   end
 
-  if node.depth >= self.max_depth then
-    node.children_ids = {}
-    callback()
-    return
-  end
-
   self:fetch_children(node_id, function()
     if node.children_ids and #node.children_ids > 0 then
       node.expanded = true
@@ -265,7 +254,7 @@ function State:toggle(node_id, callback)
   end
 
   if node.children_ids == nil then
-    if node.depth >= self.max_depth or self.open_capped then
+    if self:_is_fetch_blocked(node) then
       node.children_ids = {}
       callback()
       return

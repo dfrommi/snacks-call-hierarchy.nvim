@@ -12,12 +12,10 @@ function M.call_hierarchy(item, picker)
     vim.list_extend(ret, snacks_format.tree(item, picker))
   end
 
-  if item.expanded then
-    ret[#ret + 1] = { " ", "SnacksPickerTree" }
-  elseif item.expandable then
-    ret[#ret + 1] = { " ", "SnacksPickerTree" }
+  if item.expandable and not item.expanded then
+    ret[#ret + 1] = { "▶ ", "Comment" }
   else
-    ret[#ret + 1] = { "  ", "SnacksPickerTree" }
+    ret[#ret + 1] = { " ", "SnacksPickerTree" }
   end
 
   local kind = item.kind or "Unknown"
