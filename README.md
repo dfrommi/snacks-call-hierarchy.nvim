@@ -56,9 +56,6 @@ Example with `lsp_filter`:
 
 ```lua
 require("snacks-call-hierarchy").setup({
-  max_depth = 20,
-  auto_expand_depth = 10,
-  max_open_requests = 100,
   lsp_filter = function(item)
     return item.path and item.path:find("/src/main/", 1, true) ~= nil
   end,
@@ -116,6 +113,16 @@ require("snacks-call-hierarchy").setup({
 ```
 
 Default snacks picker mappings still apply unless you override them.
+
+## Recipes
+
+### Export call sites to the quickfix list
+
+Open the call hierarchy, then use `<Tab>` to multi-select the entries you care about and press `<Ctrl-q>` to send them to the quickfix list. From there, `:cnext`/`:cprev` lets you visit every call site systematically.
+
+### Trace enclosed use-case
+
+Open incoming calls on the function you are investigating. Navigate up the tree to find the entry point that represents the use-case. Press `go` (`call_hierarchy_outgoing`) on that node to re-root with outgoing calls. The tree now shows the full execution context of that specific use-case.
 
 ## Picker options
 
