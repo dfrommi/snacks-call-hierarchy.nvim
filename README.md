@@ -85,19 +85,37 @@ vim.keymap.set("n", "<leader>co", function() Snacks.picker.call_hierarchy_out() 
 
 The root entry is annotated with `[Incoming]` or `[Outgoing]` so the current direction stays visible after re-rooting.
 
-### Picker keybindings
+### Actions
 
-Added by this plugin for both the picker list and the input window:
+This plugin registers the following actions into the picker. Bind them however you like via `win.input.keys` / `win.list.keys` in `setup()` or at call-site:
 
-| Key | Action |
+| Action | Description |
 |---|---|
-| `<CR>` | Open the selected location |
-| `<leader><space>` | Toggle incoming/outgoing direction for the current root |
-| `za` | Expand or collapse the selected node |
-| `gi` | Re-root at the selected item and show incoming calls |
-| `go` | Re-root at the selected item and show outgoing calls |
+| `call_hierarchy_toggle_expanded` | Expand or collapse the selected node |
+| `call_hierarchy_incoming` | Re-root at the selected item and show incoming calls |
+| `call_hierarchy_outgoing` | Re-root at the selected item and show outgoing calls |
+| `call_hierarchy_toggle_direction` | Toggle incoming/outgoing direction for the current root |
 
-Other default snacks picker mappings still apply unless you change them in snacks itself.
+Example keybinding configuration:
+
+```lua
+local keys = {
+  ["<CR>"]            = { "confirm",                           desc = "Open file" },
+  ["za"]              = { "call_hierarchy_toggle_expanded",    desc = "Toggle expand/collapse" },
+  ["gi"]              = { "call_hierarchy_incoming",           desc = "Re-root: incoming calls" },
+  ["go"]              = { "call_hierarchy_outgoing",           desc = "Re-root: outgoing calls" },
+  ["<leader><space>"] = { "call_hierarchy_toggle_direction",   desc = "Toggle direction" },
+}
+
+require("snacks-call-hierarchy").setup({
+  win = {
+    input = { keys = keys },
+    list  = { keys = keys },
+  },
+})
+```
+
+Default snacks picker mappings still apply unless you override them.
 
 ## Picker options
 
@@ -132,8 +150,6 @@ These are controlled by the plugin and should be treated as internal:
 | `max_open_requests` | Consumed by the plugin before the picker config is built |
 | `matcher.keep_parents` | Keeps parent nodes visible while filtering |
 | `matcher.sort_empty` | Prevents reordering when the query is empty |
-
-The plugin also installs its own keymaps into `win.input.keys` and `win.list.keys` for `<CR>`, `<leader><space>`, `za`, `gi`, and `go`. You can still add other keys alongside them.
 
 ## Credits
 

@@ -22,17 +22,18 @@ function M.setup(opts)
 
   -- Strip options the user cannot override (locked by internal tree mechanics)
   local user_opts = vim.tbl_extend("force", opts, {})
-  for _, k in ipairs({ "finder", "format", "tree", "sort", "max_depth", "auto_expand_depth", "max_open_requests", "lsp_filter" }) do
+  for _, k in ipairs({
+    "finder",
+    "format",
+    "tree",
+    "sort",
+    "max_depth",
+    "auto_expand_depth",
+    "max_open_requests",
+    "lsp_filter",
+  }) do
     user_opts[k] = nil
   end
-
-  local keys = {
-    ["<CR>"] = { "confirm", desc = "Open file" },
-    ["<leader><space>"] = { "call_hierarchy_toggle_direction", desc = "Toggle incoming/outgoing direction" },
-    ["za"] = { "call_hierarchy_toggle_expanded", desc = "Toggle expand/collapse" },
-    ["gi"] = { "call_hierarchy_incoming", desc = "Re-root at selection, show incoming calls" },
-    ["go"] = { "call_hierarchy_outgoing", desc = "Re-root at selection, show outgoing calls" },
-  }
 
   -- Plugin defaults (user opts from setup() can override these)
   local defaults = { preview = "file" }
@@ -54,14 +55,6 @@ function M.setup(opts)
     auto_expand_depth = auto_expand_depth,
     max_open_requests = max_open_requests,
     lsp_filter = opts.lsp_filter,
-    win = {
-      input = {
-        keys = keys,
-      },
-      list = {
-        keys = keys,
-      },
-    },
   }
 
   local base = vim.tbl_deep_extend("force", defaults, user_opts, locked)
