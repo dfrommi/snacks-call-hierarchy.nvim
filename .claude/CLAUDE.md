@@ -32,7 +32,7 @@ Follows the **explorer pattern** from snacks.nvim:
 - **Node IDs**: Monotonic integers (not URI-based) so the same function can appear at multiple tree positions
 - **Recursive expansion**: `State:expand_recursive()` fans out LSP requests in parallel using a pending counter; respects `max_depth`
 - **Overload protection**: `max_open_requests` (default 100) caps parallel LSP requests during initial expansion; once hit, `open_capped` freezes all further fetches and a snacks/vim warning is shown
-- **Node filtering**: `lsp_filter(item, ctx)` callback in config prunes non-matching branches as the tree is built; root is always included; `FilterContext` carries `client`, `direction`, `is_root`
+- **Node filtering**: `lsp_filter(item, ctx)` callback in config prunes non-matching branches as the tree is built; must return `true` to include a node (nil/false both exclude); root is always included; `FilterContext` carries `client`, `direction`
 - **Focus preservation on toggle**: `actions.toggle` records `node_id` and `list.top` before re-find, then restores cursor and scroll in `on_done`
 - **Sort by idx**: `sort = { fields = { "idx" } }` preserves DFS emission order during search instead of reordering by score
 - **keep_parents / sort_empty**: Matcher options keep parent nodes visible when filtering and avoid reordering on empty query

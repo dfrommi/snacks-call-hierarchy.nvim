@@ -52,17 +52,25 @@ This is the default config used when you call `setup()` without overrides.
 
 If initial expansion trips the request cap, the picker keeps the partial tree that has already loaded, shows a warning, and stops further fetching for that picker state.
 
-Example with `lsp_filter`:
+Example with `lsp_filter` — filter for production code scope (exclude test sources and dependencies):
 
 ```lua
 require("snacks-call-hierarchy").setup({
-  lsp_filter = function(item)
-    return item.path and item.path:find("/src/main/", 1, true) ~= nil
+  lsp_filter = function(item, ctx)
+    if ctx.client.name == "jdtls" then
+      return item.path and item.path:find("/src/main/", 1, true) ~= nil
+    end
+    if ctx.client.name == "rust-analyzer" then
+      return item.path
+        and item.path:find("/.cargo/", 1, true) == nil
+        and item.path:find("/.rustup/", 1, true) == nil
+    end
+    return item.path ~= nil
   end,
 })
 ```
 
-`lsp_filter` is applied while expanding the call hierarchy. Returning `false` prunes that branch entirely, so excluded nodes are neither shown nor traversed further. For `file://` URIs, the item passed to the filter also includes `item.path`. The initial root item is always included automatically.
+`lsp_filter` is applied while expanding the call hierarchy. Returning `true` includes a node; anything else (including `nil`) prunes that branch entirely, so excluded nodes are neither shown nor traversed further. For `file://` URIs, the item passed to the filter also includes `item.path`. The initial root item is always included automatically.
 
 ## Usage
 

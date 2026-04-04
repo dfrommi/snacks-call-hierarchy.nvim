@@ -84,7 +84,7 @@ function State:_matches_filter(lsp_item, is_root)
   return self.lsp_filter(lsp_item, {
     client = self.client,
     direction = self.direction,
-  }) ~= false
+  }) == true
 end
 
 ---@param lsp_item lsp.CallHierarchyItem
