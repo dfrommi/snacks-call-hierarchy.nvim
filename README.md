@@ -72,6 +72,26 @@ require("snacks-call-hierarchy").setup({
 
 `lsp_filter` is applied while expanding the call hierarchy. Returning `true` includes a node; anything else (including `nil`) prunes that branch entirely, so excluded nodes are neither shown nor traversed further. For `file://` URIs, the item passed to the filter also includes `item.path`. The initial root item is always included automatically.
 
+Example with `lsp_transform` — customise how items are displayed per LSP client and symbol kind:
+
+```lua
+require("snacks-call-hierarchy").setup({
+  lsp_transform = function(item, lsp_item, client)
+    -- For Java (jdtls): prepend the class name and show the fully-qualified class name instead of the file path.
+    -- lsp_item.detail is typically "com.example.MyClass"
+    if client.name == "jdtls" and lsp_item.detail then
+      local class_name = lsp_item.detail:match("([^.]+)$")
+      if class_name then
+        item.name = class_name .. "#" .. lsp_item.name
+      end
+      item.display_path = lsp_item.detail
+    end
+  end,
+})
+```
+
+`lsp_transform` is called for every node after the picker item is built. Mutate `item.name` to change the displayed symbol name. Set `item.display_path` (a plain string) to replace the file path shown at the end of the row — the actual `item.file` is left intact so the preview still works. Custom fields added to `item` are available in a custom `format` function.
+
 ## Usage
 
 Open the picker from the cursor position:

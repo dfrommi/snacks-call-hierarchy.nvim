@@ -20,7 +20,8 @@ end
 
 ---@param state snacks-call-hierarchy.State
 ---@param cb fun(item: snacks.picker.finder.Item)
-local function walk_and_emit(state, cb)
+---@param lsp_transform? fun(item: snacks.picker.finder.Item, lsp_item: lsp.CallHierarchyItem, client: vim.lsp.Client)
+local function walk_and_emit(state, cb, lsp_transform)
   local nodes = state:walk()
   -- Map node_id -> emitted picker item for parent linking
   local items_by_id = {} ---@type table<integer, snacks.picker.finder.Item>
@@ -57,6 +58,10 @@ local function walk_and_emit(state, cb)
     items_by_id[node.id] = item
     items[#items + 1] = item
 
+    if lsp_transform then
+      lsp_transform(item, lsp_item, state.client)
+    end
+
     -- Track last child per parent
     if node.parent_id then
       -- Previous last child is no longer last
@@ -85,7 +90,7 @@ function M.finder(direction)
       -- Subsequent runs: walk existing state
       ---@async
       return function(cb)
-        walk_and_emit(state, cb)
+        walk_and_emit(state, cb, opts.lsp_transform)
       end
     end
 
@@ -129,7 +134,7 @@ function M.finder(direction)
 
           -- Recursively fetch and expand up to auto_expand_depth
           new_state:expand_recursive(new_state.root_id, auto_expand_depth, function()
-            walk_and_emit(new_state, cb)
+            walk_and_emit(new_state, cb, opts.lsp_transform)
             running:resume()
           end)
         end)

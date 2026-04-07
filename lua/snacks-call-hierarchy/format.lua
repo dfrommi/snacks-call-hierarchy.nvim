@@ -37,7 +37,7 @@ function M.call_hierarchy(item, picker)
   end
 
   if item.file then
-    local path = vim.fn.fnamemodify(item.file, ":~:.")
+    local path = item.display_path or vim.fn.fnamemodify(item.file, ":~:.")
     ret[#ret + 1] = { "  " .. path, "Comment" }
     if item.pos then
       ret[#ret + 1] = { ":" .. item.pos[1], "Comment" }

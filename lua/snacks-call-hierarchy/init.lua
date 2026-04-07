@@ -5,6 +5,7 @@ local M = {}
 ---@field auto_expand_depth? integer Auto-expand depth on open (default 10)
 ---@field max_open_requests? integer Maximum child LSP requests during initial expansion (default 100)
 ---@field lsp_filter? fun(item: snacks-call-hierarchy.FilterItem, ctx: snacks-call-hierarchy.FilterContext): boolean Prune non-matching branches while expanding. The initial root is always included automatically.
+---@field lsp_transform? fun(item: snacks.picker.finder.Item, lsp_item: lsp.CallHierarchyItem, client: vim.lsp.Client) Mutate a picker item after it is built. Called for every node. Set `item.name` or `item.display_path` for custom display.
 
 ---@param opts? snacks-call-hierarchy.Config
 function M.setup(opts)
@@ -31,6 +32,7 @@ function M.setup(opts)
     "auto_expand_depth",
     "max_open_requests",
     "lsp_filter",
+    "lsp_transform",
   }) do
     user_opts[k] = nil
   end
@@ -55,6 +57,7 @@ function M.setup(opts)
     auto_expand_depth = auto_expand_depth,
     max_open_requests = max_open_requests,
     lsp_filter = opts.lsp_filter,
+    lsp_transform = opts.lsp_transform,
   }
 
   local base = vim.tbl_deep_extend("force", defaults, user_opts, locked)
