@@ -1,11 +1,12 @@
 local finder = require("snacks-call-hierarchy.finder")
+local defaults = require("snacks-call-hierarchy.config")
 
 local M = {}
 
---- Toggle expand/collapse. Does nothing on leaf nodes.
 ---@param picker snacks.Picker
----@param item snacks.picker.Item
-function M.toggle(picker, item)
+---@param item? snacks.picker.Item
+---@return snacks-call-hierarchy.State?, snacks-call-hierarchy.Node?
+local function get_context(picker, item)
   if not item then
     return
   end
@@ -15,6 +16,17 @@ function M.toggle(picker, item)
   end
   local node = state.nodes[item.node_id]
   if not node then
+    return
+  end
+  return state, node
+end
+
+--- Toggle expand/collapse. Does nothing on leaf nodes.
+---@param picker snacks.Picker
+---@param item snacks.picker.Item
+function M.toggle(picker, item)
+  local state, node = get_context(picker, item)
+  if not state or not node then
     return
   end
 
@@ -59,7 +71,7 @@ local function replace_state(picker, lsp_item, direction)
   })
   finder.set_state(picker, new_state)
 
-  local auto_expand_depth = picker.opts.auto_expand_depth or 10
+  local auto_expand_depth = picker.opts.auto_expand_depth or defaults.auto_expand_depth
   new_state:expand_recursive(new_state.root_id, auto_expand_depth, function()
     vim.schedule(function()
       picker.list:set_target()
@@ -87,28 +99,19 @@ end
 ---@param item snacks.picker.Item
 ---@param direction "incoming"|"outgoing"
 local function reroot(picker, item, direction)
-  if not item then
-    return
-  end
-  local state = finder.get_state(picker)
-  if not state then
-    return
-  end
-  local node = state.nodes[item.node_id]
-  if not node then
+  local state, node = get_context(picker, item)
+  if not state or not node then
     return
   end
   replace_state(picker, node.lsp_item, direction)
 end
 
---- Re-root at the selected item and show incoming calls.
 ---@param picker snacks.Picker
 ---@param item snacks.picker.Item
 function M.reroot_incoming(picker, item)
   reroot(picker, item, "incoming")
 end
 
---- Re-root at the selected item and show outgoing calls.
 ---@param picker snacks.Picker
 ---@param item snacks.picker.Item
 function M.reroot_outgoing(picker, item)

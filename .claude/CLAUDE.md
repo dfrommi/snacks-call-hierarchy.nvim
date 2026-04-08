@@ -6,6 +6,7 @@ Neovim plugin providing LSP call hierarchy as an expandable tree inside [snacks.
 
 ```
 lua/snacks-call-hierarchy/init.lua       -- setup(), registers picker sources into snacks with locked/user opts
+lua/snacks-call-hierarchy/config.lua     -- Shared default values (max_depth, auto_expand_depth, max_open_requests)
 lua/snacks-call-hierarchy/state.lua      -- Tree state: nodes, LSP fetching (fetch_children, expand_recursive, toggle, walk)
 lua/snacks-call-hierarchy/finder.lua     -- Picker finder: first-run prepareCallHierarchy init + subsequent state walks; weak-keyed state registry
 lua/snacks-call-hierarchy/format.lua     -- Formatter: tree indent + expand icon + kind icon + name + direction label (root) + file

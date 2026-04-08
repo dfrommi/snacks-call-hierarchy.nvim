@@ -16,10 +16,11 @@ function M.setup(opts)
   local format = require("snacks-call-hierarchy.format")
 
   local sources = require("snacks.picker.config.sources")
+  local defaults = require("snacks-call-hierarchy.config")
 
-  local max_depth = opts.max_depth or 20
-  local auto_expand_depth = opts.auto_expand_depth or 10
-  local max_open_requests = opts.max_open_requests or 100
+  local max_depth = opts.max_depth or defaults.max_depth
+  local auto_expand_depth = opts.auto_expand_depth or defaults.auto_expand_depth
+  local max_open_requests = opts.max_open_requests or defaults.max_open_requests
 
   -- Strip options the user cannot override (locked by internal tree mechanics)
   local user_opts = vim.tbl_extend("force", {}, opts)
@@ -38,7 +39,7 @@ function M.setup(opts)
   end
 
   -- Plugin defaults (user opts from setup() can override these)
-  local defaults = { preview = "file" }
+  local plugin_defaults = { preview = "file" }
 
   -- Internal config that always wins over user opts
   ---@type snacks.picker.Config
@@ -60,7 +61,7 @@ function M.setup(opts)
     lsp_transform = opts.lsp_transform,
   }
 
-  local base = vim.tbl_deep_extend("force", defaults, user_opts, locked)
+  local base = vim.tbl_deep_extend("force", plugin_defaults, user_opts, locked)
 
   sources.call_hierarchy_in = vim.tbl_deep_extend("force", base, {
     finder = finder.incoming,

@@ -1,3 +1,5 @@
+local defaults = require("snacks-call-hierarchy.config")
+
 ---@class snacks-call-hierarchy.Node
 ---@field id integer
 ---@field lsp_item lsp.CallHierarchyItem
@@ -47,8 +49,8 @@ function State.new(client, root_item, direction, opts)
   self.direction = direction
   self.nodes = {}
   self._next_id = 0
-  self.max_depth = opts.max_depth or 20
-  self.max_open_requests = opts.max_open_requests or 100
+  self.max_depth = opts.max_depth or defaults.max_depth
+  self.max_open_requests = opts.max_open_requests or defaults.max_open_requests
   self.open_request_count = 0
   self.open_capped = false
   self._warned_open_cap = false
@@ -74,14 +76,13 @@ function State:_matches_filter(lsp_item, is_root)
     return true
   end
 
-  ---@cast lsp_item snacks-call-hierarchy.FilterItem
+  ---@type snacks-call-hierarchy.FilterItem
+  local filter_item = vim.tbl_extend("force", {}, lsp_item)
   if lsp_item.uri and vim.startswith(lsp_item.uri, "file://") then
-    lsp_item.path = vim.uri_to_fname(lsp_item.uri)
-  else
-    lsp_item.path = nil
+    filter_item.path = vim.uri_to_fname(lsp_item.uri)
   end
 
-  return self.lsp_filter(lsp_item, {
+  return self.lsp_filter(filter_item, {
     client = self.client,
     direction = self.direction,
   }) == true
@@ -114,11 +115,7 @@ function State:_notify_open_cap()
 
   local message = ("Stopped expanding call hierarchy after %d LSP requests."):format(self.max_open_requests)
   vim.schedule(function()
-    if Snacks and Snacks.notify and Snacks.notify.warn then
-      Snacks.notify.warn(message, { title = "Call Hierarchy" })
-    else
-      vim.notify(message, vim.log.levels.WARN, { title = "Call Hierarchy" })
-    end
+    Snacks.notify.warn(message, { title = "Call Hierarchy" })
   end)
 end
 
@@ -276,9 +273,10 @@ function State:toggle(node_id, callback)
 end
 
 --- Depth-first walk over expanded nodes, yielding nodes in display order.
----@return snacks-call-hierarchy.Node[]
+---@return snacks-call-hierarchy.Node[], table<integer, boolean> nodes and set of last-child node IDs
 function State:walk()
   local result = {}
+  local last_children = {} ---@type table<integer, boolean>
 
   local function visit(node_id)
     local node = self.nodes[node_id]
@@ -286,7 +284,8 @@ function State:walk()
       return
     end
     result[#result + 1] = node
-    if node.expanded and node.children_ids then
+    if node.expanded and node.children_ids and #node.children_ids > 0 then
+      last_children[node.children_ids[#node.children_ids]] = true
       for _, child_id in ipairs(node.children_ids) do
         visit(child_id)
       end
@@ -294,7 +293,7 @@ function State:walk()
   end
 
   visit(self.root_id)
-  return result
+  return result, last_children
 end
 
 return State

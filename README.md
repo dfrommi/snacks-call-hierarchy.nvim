@@ -125,12 +125,12 @@ Example keybinding configuration:
 
 ```lua
 local keys = {
-  ["<CR>"]            = { "confirm",                           desc = "Open file" },
-  ["za"]              = { "call_hierarchy_toggle_expanded",    desc = "Toggle expand/collapse" },
-  ["gi"]              = { "call_hierarchy_incoming",           desc = "Re-root: incoming calls" },
-  ["go"]              = { "call_hierarchy_outgoing",           desc = "Re-root: outgoing calls" },
-  ["<leader><space>"] = { "call_hierarchy_toggle_direction",   desc = "Toggle direction" },
-}
+    ["S-<CR>"] = { "confirm", desc = "Open file", mode = { "n", "i" } },
+    ["<CR>"] = { "call_hierarchy_toggle_expanded", desc = "Toggle expand/collapse", mode = { "n", "i" } },
+    ["gi"] = { "call_hierarchy_incoming", desc = "Re-root: incoming calls" },
+    ["go"] = { "call_hierarchy_outgoing", desc = "Re-root: outgoing calls" },
+    ["gt"] = { "call_hierarchy_toggle_direction", desc = "Toggle direction" },
+-}
 
 require("snacks-call-hierarchy").setup({
   win = {

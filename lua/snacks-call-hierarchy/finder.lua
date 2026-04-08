@@ -1,5 +1,6 @@
 local State = require("snacks-call-hierarchy.state")
 local lsp_source = require("snacks.picker.source.lsp")
+local defaults = require("snacks-call-hierarchy.config")
 
 local M = {}
 
@@ -22,18 +23,12 @@ end
 ---@param cb fun(item: snacks.picker.finder.Item)
 ---@param lsp_transform? fun(item: snacks.picker.finder.Item, lsp_item: lsp.CallHierarchyItem, client: vim.lsp.Client)
 local function walk_and_emit(state, cb, lsp_transform)
-  local nodes = state:walk()
-  -- Map node_id -> emitted picker item for parent linking
+  local nodes, last_children = state:walk()
   local items_by_id = {} ---@type table<integer, snacks.picker.finder.Item>
-  -- Track last child per parent for tree rendering
-  local last_child = {} ---@type table<integer, snacks.picker.finder.Item>
 
-  -- First pass: create items
-  local items = {} ---@type snacks.picker.finder.Item[]
   for _, node in ipairs(nodes) do
     local lsp_item = node.lsp_item
     local kind = lsp_source.symbol_kind(lsp_item.kind)
-    local parent_item = node.parent_id and items_by_id[node.parent_id] or nil
 
     ---@type snacks.picker.finder.Item
     local item = {
@@ -42,8 +37,8 @@ local function walk_and_emit(state, cb, lsp_transform)
       kind = kind,
       detail = lsp_item.detail,
       tree = true,
-      parent = parent_item,
-      last = true,
+      parent = node.parent_id and items_by_id[node.parent_id] or nil,
+      last = last_children[node.id] or node.parent_id == nil,
       node_id = node.id,
       expandable = node.children_ids == nil or #node.children_ids > 0,
       expanded = node.expanded,
@@ -56,23 +51,11 @@ local function walk_and_emit(state, cb, lsp_transform)
     end
 
     items_by_id[node.id] = item
-    items[#items + 1] = item
 
     if lsp_transform then
       lsp_transform(item, lsp_item, state.client)
     end
 
-    -- Track last child per parent
-    if node.parent_id then
-      -- Previous last child is no longer last
-      if last_child[node.parent_id] then
-        last_child[node.parent_id].last = false
-      end
-      last_child[node.parent_id] = item
-    end
-  end
-
-  for _, item in ipairs(items) do
     cb(item)
   end
 end
@@ -97,9 +80,9 @@ function M.finder(direction)
     -- First run: prepare + fetch first level
     local buf = ctx.filter.current_buf
     local win = ctx.filter.current_win
-    local max_depth = opts.max_depth or 20
-    local auto_expand_depth = opts.auto_expand_depth or 10
-    local max_open_requests = opts.max_open_requests or 100
+    local max_depth = opts.max_depth or defaults.max_depth
+    local auto_expand_depth = opts.auto_expand_depth or defaults.auto_expand_depth
+    local max_open_requests = opts.max_open_requests or defaults.max_open_requests
 
     -- Capture client and params in the main loop (before entering async context)
     local clients = lsp_source.get_clients(buf, "textDocument/prepareCallHierarchy")
